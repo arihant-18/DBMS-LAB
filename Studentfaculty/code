@@ -1,0 +1,118 @@
+create schema studentfaculty;
+use studentfaculty;
+
+create table STUDENT
+(
+snum int,
+sname varchar(30),
+major varchar(30),
+lvl varchar(2),
+age int,
+primary key (snum)
+);
+
+create table FACULTY
+(
+fid int,
+fname varchar(30),
+deptid int,
+primary key (fid)
+);
+                
+create table CLASS 
+( 
+cname varchar(10),
+meets_at timestamp,
+room varchar(10),
+fid int,
+primary key (cname),
+foreign key (fid) references FACULTY(fid)
+);
+                
+
+create table ENROLLED
+(
+snum int,
+cname varchar(10),
+primary key (snum,cname),
+foreign key (snum) references STUDENT(snum),
+foreign key (cname) references CLASS(cname)
+);
+                
+
+INSERT INTO STUDENT 
+VALUES(1, 'John', 'CS', 'Sr', 19),
+(2, 'Smith', 'CS', 'Jr', 20),
+(3 , 'Jacob', 'CV', 'Sr', 20),
+(4, 'Tom ', 'CS', 'Jr', 20),
+(5, 'Rahul', 'CS', 'Jr', 20),
+(6, 'Rita', 'CS', 'Sr', 21);
+select * from STUDENT;
+
+INSERT INTO FACULTY
+ VALUES(11, 'Harish', 1000),
+(12, 'MV', 1000),
+(13 ,'Mira',1001),
+(14, 'Shiva', 1002),
+(15, 'Nupur', 1000);
+
+select * from FACULTY;
+
+
+insert into CLASS
+ values('class1', '12/11/15 10:15:16', 'R1', 14),
+('class10', '12/11/15 10:15:16', 'R128', 14),
+('class2', '12/11/15 10:15:20', 'R2', 12),
+('class3', '12/11/15 10:15:25', 'R3', 11),
+('class4', '12/11/15 20:15:20', 'R4', 14),
+('class5', '12/11/15 20:15:20', 'R3', 15),
+('class6', '12/11/15 13:20:20', 'R2', 14),
+('class7', '12/11/15 10:10:10', 'R3', 14);
+
+select * from CLASS;
+
+
+insert into ENROLLED
+ values(1, 'class1'),
+(2, 'class1'),
+(3, 'class3'),
+(4, 'class3'),
+(5, 'class4'),
+(1, 'class5'),
+(2, 'class5'),
+(3, 'class5'),
+(4, 'class5'),
+(5, 'class5');
+
+
+SELECT s.sname from STUDENT s ,CLASS c ,FACULTY f, ENROLLED e 
+WHERE s.snum=e.snum and s.lvl="Jr" and e.cname=c.cname and f.fid=c.fid and f.Fname ="Harish";
+
+SELECT c.cname from CLASS c 
+where c.room = "R128" or c.cname in (select e.cname 
+										from ENROLLED e 
+                                        group by e.cname
+                                        having count(e.snum)>=5);
+                                        
+select distinct s.sname from STUDENT s 
+where s.snum in(select e1.snum from ENROLLED e1,ENROLLED e2, CLASS c1, CLASS c2
+					where e1.snum=e2.snum and e1.cname <> e2.cname and e1.cname = c1.cname and e2.cname=c2.cname and c1.meets_at=c2.meets_at);
+										
+select distinct f.fname from FACULTY f 
+where not exists  (select room from CLASS where room not in (select c.room from CLASS c where c.fid=f.fid));
+
+
+select distinct f.fname from FACULTY f 
+where 5> (select count(e.snum) from CLASS c, ENROLLED e where c.cname=e.cname and c.fid=f.fid);
+
+
+select distinct s.sname from STUDENT s 
+where s.snum not in ( select e.snum FROM ENROLLED e );
+
+select s.age, s.lvl, count(*) from STUDENT s 
+group by s.age,s.lvl
+having s.lvl in( select s1.lvl from STUDENT s1 where s1.age=s.age
+					group by s1.age,s1.lvl
+                    having count(*)>= all( select count(*) from STUDENT s2 
+											where s1.age=s2.age 
+                                            group by s2.lvl,s2.age));
