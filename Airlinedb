@@ -1,0 +1,123 @@
+create schema Supplier;
+
+use Supplier;
+
+create table Supplier
+(
+sid int,
+sname varchar(30),
+city varchar(20),
+primary key (sid)
+);
+
+create table Parts 
+(
+pid int,
+pname varchar(30),
+color varchar(10),
+primary key (pid)
+);
+
+create table Catalog 
+(
+sid int,
+pid int,
+cost int,
+primary key(sid,pid),
+foreign key (sid) references Supplier(sid),
+foreign key (pid) references Parts(pid)
+); 
+
+insert into Supplier
+values(10001,"Acme Widget","Bangalore"),
+(10002,"Johns","Kolkata"),
+(10003,"Vimal","Mumbai"),
+(10004,"Reliance","Delhi");
+
+insert into Parts
+values(20001,"Book","Red"),
+(20002,"Pen","Red"),
+(20003,"Pencil","Green"),
+(20004,"Mobile","Green"),
+(20005,"Charger","Black");
+
+insert into Catalog
+values(10001,20001,10),
+(10001,20002,10),
+(10001,20003,30),
+(10001,20004,10),
+(10001,20005,10),
+(10002,20001,10),
+(10002,20002,20),
+(10003,20003,30),
+(10004,20003,40);
+
+SELECT 
+    pname
+FROM
+    Parts
+WHERE
+    pid = SOME (SELECT 
+            pid
+        FROM
+            Catalog);
+            
+SELECT 
+    sname
+FROM
+    Supplier
+WHERE
+    sid IN (SELECT 
+            sid
+        FROM
+            catalog
+        GROUP BY sid
+        HAVING COUNT(DISTINCT pid) = 5); 
+        
+SELECT DISTINCT
+    sname
+FROM
+    supplier s,
+    parts p,
+    catalog c
+WHERE
+    p.color = 'Red' AND p.pid = c.pid
+        AND s.sid = c.sid; 
+        
+SELECT DISTINCT
+    pname
+FROM
+    parts p,
+    supplier s,
+    catalog c
+WHERE
+    sname = 'Acme Widget' AND s.sid = c.sid
+        AND c.pid = p.pid;
+
+SELECT 
+    c.sid
+FROM
+    catalog c,
+    (SELECT 
+        pid, AVG(cost) AS avg_cost
+    FROM
+        catalog
+    GROUP BY pid) AS A
+WHERE
+    c.pid = A.pid AND c.cost > avg_cost;
+
+SELECT 
+    s.sname, p.pname, A.max_cost
+FROM
+    supplier s,
+    parts p,
+    catalog c,
+    (SELECT 
+        pid, MAX(cost) AS max_cost
+    FROM
+        catalog
+    GROUP BY pid) AS A
+WHERE
+    c.pid = A.pid AND cost = max_cost
+        AND s.sid = c.sid
+        AND c.pid = p.pid;
